@@ -1,6 +1,7 @@
 import AppKit
 
 // Headless modes used for verification (no UI side effects on the user's session).
+_ = AppLanguage.current  // pin the UI language for this launch
 let arguments = CommandLine.arguments
 if arguments.contains("--self-test") {
     exit(SelfTest.run())

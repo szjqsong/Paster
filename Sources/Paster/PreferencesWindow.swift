@@ -51,6 +51,20 @@ struct GeneralPane: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var trusted = PasteService.isTrusted
     @State private var confirmClear = false
+    @State private var language = AppLanguage.preference
+
+    /// The UI language is resolved at launch; offer a relaunch once the choice differs.
+    private var needsRelaunch: Bool { language != AppLanguage.launchPreference }
+
+    static func relaunch() {
+        Store.shared.saveNow(synchronously: true)
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 0.5; open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
 
     static let limits = [100, 200, 500, 1000, 5000, 10000, 0]
 
@@ -58,6 +72,19 @@ struct GeneralPane: View {
         Form {
             LabeledContent(L("Open Paster:", "打開 Paster：")) {
                 HotKeyRecorder()
+            }
+            LabeledContent(L("Language:", "語言：")) {
+                HStack {
+                    Picker("", selection: $language) {
+                        ForEach(AppLanguage.allCases) { Text($0.displayName).tag($0) }
+                    }
+                    .labelsHidden()
+                    .frame(width: 180)
+                    .onChange(of: language) { AppLanguage.preference = $0 }
+                    if needsRelaunch {
+                        Button(L("Relaunch to Apply", "重新啟動以套用")) { GeneralPane.relaunch() }
+                    }
+                }
             }
             Toggle(L("Launch Paster at login", "登入時啟動 Paster"), isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { on in
