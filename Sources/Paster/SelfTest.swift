@@ -1,18 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// Headless checks (`Paster --self-test`) and a UI snapshot (`Paster --snapshot out.png`).
-/// Both refuse to touch the real history unless PASTER_DATA_DIR points somewhere else.
+/// Headless checks (`Paster --self-test`). Uses a throwaway store, never the real history.
 enum SelfTest {
     private static var failures = 0
 
     private static func check(_ cond: Bool, _ name: String) {
         print((cond ? "PASS  " : "FAIL  ") + name)
         if !cond { failures += 1 }
-    }
-
-    private static var usesScratchStore: Bool {
-        !(ProcessInfo.processInfo.environment["PASTER_DATA_DIR"] ?? "").isEmpty
     }
 
     static func run() -> Int32 {
@@ -78,46 +73,5 @@ enum SelfTest {
         g.draw(in: NSRect(x: 0, y: 0, width: width, height: height), angle: 35)
         NSGraphicsContext.restoreGraphicsState()
         return rep.representation(using: .png, properties: [:])!
-    }
-
-    /// Renders the strip with sample data to a PNG, for checking the layout without
-    /// showing anything on screen.
-    static func snapshot(to path: String) -> Int32 {
-        guard usesScratchStore else {
-            print("Refusing to snapshot: set PASTER_DATA_DIR to a scratch directory.")
-            return 2
-        }
-        let store = Store.shared
-        if store.items.isEmpty {
-            func add(_ raw: RawCapture) {
-                if let (item, blobs) = ClipboardMonitor.process(raw) { store.insertCaptured(item, blobs: blobs) }
-            }
-            var r = RawCapture(string: "#4F7CFF"); r.bundleID = "com.apple.Safari"; r.appName = "Safari"; add(r)
-            r = RawCapture(); r.png = samplePNG(width: 640, height: 400); r.bundleID = "com.apple.Preview"; r.appName = "Preview"; add(r)
-            r = RawCapture(); r.fileURLs = [URL(fileURLWithPath: "/Applications/Safari.app")]; r.bundleID = "com.apple.finder"; add(r)
-            r = RawCapture(string: "https://developer.apple.com/documentation/appkit/nspasteboard"); r.bundleID = "com.apple.Safari"; add(r)
-            r = RawCapture(string: "func greet(_ name: String) -> String {\n    \"Hello, \\(name)!\"\n}"); r.bundleID = "com.apple.dt.Xcode"; add(r)
-            r = RawCapture(string: "明天下午三點開會，記得帶上季度報告和簡報檔案。"); r.bundleID = "com.apple.Notes"; add(r)
-            _ = store.addPinboard(name: "Work")
-            _ = store.addPinboard(name: "Snippets")
-        }
-        let model = PanelModel()
-        let size = NSSize(width: 1440, height: PanelController.panelHeight)
-        let root = PanelView(model: model)
-            .frame(width: size.width, height: size.height)
-            .background(Color(white: 0.16))
-            .environment(\.colorScheme, .dark)
-        let host = NSHostingView(rootView: root)
-        host.frame = NSRect(origin: .zero, size: size)
-        let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-        window.contentView = host
-        host.layoutSubtreeIfNeeded()
-        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
-        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return 1 }
-        host.cacheDisplay(in: host.bounds, to: rep)
-        guard let png = rep.representation(using: .png, properties: [:]) else { return 1 }
-        do { try png.write(to: URL(fileURLWithPath: path)) } catch { print(error); return 1 }
-        print("Snapshot written to \(path)")
-        return 0
     }
 }

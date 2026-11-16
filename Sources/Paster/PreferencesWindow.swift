@@ -33,11 +33,13 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
 }
 
 struct PreferencesView: View {
+    @State var tab = 0
+
     var body: some View {
-        TabView {
-            GeneralPane().tabItem { Label(L("General", "一般"), systemImage: "gearshape") }
-            PrivacyPane().tabItem { Label(L("Privacy", "隱私"), systemImage: "hand.raised") }
-            AboutPane().tabItem { Label(L("About", "關於"), systemImage: "info.circle") }
+        TabView(selection: $tab) {
+            GeneralPane().tabItem { Label(L("General", "一般"), systemImage: "gearshape") }.tag(0)
+            PrivacyPane().tabItem { Label(L("Privacy", "隱私"), systemImage: "hand.raised") }.tag(1)
+            AboutPane().tabItem { Label(L("About", "關於"), systemImage: "info.circle") }.tag(2)
         }
         .padding(20)
         .frame(width: 560, height: 470)
@@ -206,11 +208,15 @@ struct PrivacyPane: View {
                         if let icon = ImageCache.shared.appIcon(bundleID: bid) {
                             Image(nsImage: icon).resizable().frame(width: 18, height: 18)
                         } else {
-                            Image(systemName: "app.dashed").frame(width: 18, height: 18)
+                            Image(systemName: Settings.knownAppNames[bid] != nil ? "key.fill" : "app.dashed")
+                                .foregroundStyle(.secondary).frame(width: 18, height: 18)
                         }
-                        Text(appName(bid))
+                        let name = appName(bid)
+                        Text(name)
                         Spacer()
-                        Text(bid).font(.caption).foregroundStyle(.secondary)
+                        if name != bid {
+                            Text(bid).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
                     }
                     .tag(bid)
                 }
@@ -235,7 +241,7 @@ struct PrivacyPane: View {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bid) {
             return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
         }
-        return bid
+        return Settings.knownAppNames[bid] ?? bid
     }
 
     private func addApp() {

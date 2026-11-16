@@ -23,6 +23,16 @@ final class Settings: ObservableObject {
     }
     @Published var recognizeTextInImages: Bool { didSet { d.set(recognizeTextInImages, forKey: "recognizeTextInImages") } }
 
+    /// Display names for the default entries, used when the app isn't installed.
+    static let knownAppNames: [String: String] = [
+        "com.1password.1password": "1Password", "com.1password": "1Password",
+        "com.agilebits.onepassword-osx": "1Password 6", "com.agilebits.onepassword4": "1Password 4",
+        "com.agilebits.onepassword7": "1Password 7", "com.bitwarden.desktop": "Bitwarden",
+        "com.dashlane.Dashlane": "Dashlane", "com.lastpass.LastPass": "LastPass",
+        "com.keepersecurity": "Keeper", "com.apple.Passwords": L("Passwords", "密碼"),
+        "com.apple.keychainaccess": L("Keychain Access", "鑰匙圈存取"),
+    ]
+
     /// Password managers ignored by default (same set Paste ships with).
     static let defaultExcludedBundleIDs = [
         "com.1password.1password", "com.1password", "com.agilebits.onepassword-osx",

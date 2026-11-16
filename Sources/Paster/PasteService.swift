@@ -3,7 +3,9 @@ import ApplicationServices
 import Carbon.HIToolbox
 
 enum PasteService {
-    static var isTrusted: Bool { AXIsProcessTrusted() }
+    /// Set only by the screenshot renderer so the "grant access" warning is not drawn.
+    static var assumeTrusted = false
+    static var isTrusted: Bool { assumeTrusted || AXIsProcessTrusted() }
 
     /// Shows the system "grant Accessibility access" dialog if Paster is not yet trusted.
     @discardableResult

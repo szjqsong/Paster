@@ -13,7 +13,8 @@ app.delegate = delegate
 app.setActivationPolicy(.accessory)
 
 if let idx = arguments.firstIndex(of: "--snapshot"), idx + 1 < arguments.count {
-    exit(SelfTest.snapshot(to: arguments[idx + 1]))
+    let scene = arguments.firstIndex(of: "--scene").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? "strip"
+    exit(Screenshots.render(scene: scene, to: arguments[idx + 1], light: arguments.contains("--light")))
 }
 
 app.run()
